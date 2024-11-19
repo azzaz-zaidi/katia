@@ -1,11 +1,17 @@
-from openai import OpenAI
-from django.conf import settings
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from ..user.models import User
-from .models import Conversation, Message
+import os
+from pathlib import Path
+import json
+import socket
+from .models import Conversation
 
+CONV_DIR = os.path.join(Path(__file__).resolve().parent.parent.parent, "KatiaIRC/Conv_Histories")
+
+
+IRC_SOCKET_HOST = "localhost"
+IRC_SOCKET_PORT = 1234
 
 @api_view(['POST'])
 def create_conversation(request):
@@ -25,105 +31,62 @@ def create_conversation(request):
         return Response({'success': False, 'message': f'bad request {e}'}, status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['POST'])
+@api_view(['GET'])
 def create_message(request):
-    try:
-        conv_id = request.data.get('conv_id')
-        prompt = request.data.get('prompt')
+    """Endpoint to send a message to the bot and get a response."""
+    if request.method == "GET":
+        user_id = request.GET.get("user_id",)
+        user_message = request.GET.get("message", "")
+        is_delete = request.GET.get("is_delete", False)
 
-        if not conv_id:
-            return Response({'success': False, 'message': 'Conversation id is required'},
-                            status=status.HTTP_400_BAD_REQUEST)
+        if not user_id:
+            return Response({"error": "User id is required."}, status=400)
 
-        conv_obj = Conversation.objects.filter(conv_id=conv_id).first()
-
-        prompts = [
-            {
-                "content": "You are a helpful assistant.",
-                "role": "system"
-            }
-        ]
-
-        messages = conv_obj.messages.filter(role__in=[2, 3]).order_by('created_at')
-
-        prompts.extend(
-            {
-                "content": message.content,
-                "role": "user" if message.role == 2 else "assistant",
-            }
-            for message in messages
-        )
-        prompts.append(
-            {
-                "content": f'{prompt}',
-                "role": "user"
-            }
-        )
-        client = OpenAI(base_url=settings.BASE_URL,
-                        api_key=settings.API_KEY)
-        # Call ChatGPT API
-        result = client.chat.completions.create(model="gpt-4o-mini", messages=prompts, temperature=0, stream=False)
+        data = {
+            "user_id": user_id,
+            "message": user_message,
+            "is_delete": is_delete
+        }
         try:
-            api_response = result.to_dict()
-            content = api_response["choices"][0]["message"]["content"]
-
-            Message.objects.create(
-                conversation=conv_obj,
-                role=2,
-                content=prompt
-            )
-
-            Message.objects.create(
-                conversation=conv_obj,
-                role=3,
-                content=content
-            )
-            return Response({'success': True, 'message': content}, status=status.HTTP_201_CREATED)
+            # Connect to the IRC bot's socket server
+            with socket.create_connection((IRC_SOCKET_HOST, IRC_SOCKET_PORT)) as sock:
+                sock.sendall(json.dumps(data).encode("utf-8"))
+                response = sock.recv(1024).decode("utf-8")
+                return Response({"response": response}, status=200)
         except Exception as e:
-            return Response({'success': False, 'message': f'bad request {e}'}, status.HTTP_400_BAD_REQUEST)
+            return Response({"error": f"Failed to query bot: {str(e)}"}, status=500)
 
-    except Exception as e:
-        return Response({'success': False, 'message': f'bad request {e}'}, status.HTTP_400_BAD_REQUEST)
+    return Response({"error": "Invalid request method."}, status=405)
 
 
 @api_view(['GET'])
-def display_convo(request):
+def display_conversation(request):
     try:
-        conv_obj = Conversation.objects.filter(user_id=request.user.id).first()
-        if not conv_obj:
-            return Response({'success': False, 'message': 'Conversation not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        messages = conv_obj.messages.filter(role__in=[2, 3]).order_by('created_at')
-
-        messages_data = [
-            {
-                "role": "User" if message.role == 2 else "Assistant",
-                "content": message.content,
-                "created_at": message.created_at
-            }
-            for message in messages
-        ]
-        return Response({'success': True, 'message': messages_data}, status=status.HTTP_200_OK)
+        user_id = request.GET.get('user_id')
+        user_file_path = os.path.join(CONV_DIR, f"{user_id}.txt")
+        if os.path.exists(user_file_path):
+            with open(user_file_path, "r", encoding="utf-8") as user_file:
+                conversation_data = json.load(user_file)
+                return Response({'success': True, 'message': conversation_data},
+                        status=200)
+        else:
+            return Response({'success': True, 'message': f"No conversation history found for user {user_id}."}, status=200)
     except Exception as e:
-        return Response({'success': False, 'message': f'bad request {e}'}, status.HTTP_400_BAD_REQUEST)
+        return Response({'success': False, 'message': f'bad request {e}'}, status=400)
 
 
 @api_view(['DELETE'])
 def delete_conversation(request):
     try:
-        conv_id = request.GET.get('conv_id')
+        user_id = request.GET.get('user_id')
 
-        if not conv_id:
-            return Response({"error": "Conversation ID is required"}, status=status.HTTP_400_BAD_REQUEST)
-
-        conversation = Conversation.objects.filter(conv_id=conv_id).first()
-
-        if not conversation:
-            return Response({"error": "Conversation not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        conversation.delete()
-
-        return Response({"message": "Conversation and its messages were deleted successfully"},
-                        status=status.HTTP_200_OK)
+        user_file_path = os.path.join(CONV_DIR, f"{user_id}.txt")
+        if os.path.exists(user_file_path):
+            os.remove(user_file_path)
+            return Response({'success': True, "message": f"Conversation history for user {user_id} has been deleted."},
+                            status=201)
+        else:
+            return Response({'success': True, "message": f"No conversation history found for user {user_id} to delete."},
+                            status=201)
     except Exception as e:
-        return Response({'success': False, 'message': f'bad request {e}'}, status.HTTP_400_BAD_REQUEST)
+        return Response({'success': False, 'message': f'bad request {e}'}, status=400)
