@@ -1,15 +1,27 @@
-import socket
-from threading import Thread
-
-import openai
-from irc.bot import SingleServerIRCBot
-from openai import OpenAI
-import json
 import os
+import json
+import openai
+import socket
+
 from pathlib import Path
+from openai import OpenAI
+from threading import Thread
+from django.conf import settings
+from irc.bot import SingleServerIRCBot
 
 
-# BASE_PATH = "./KatiaIRC/Conv_Histories"
+# Configuration
+SERVER = "irc.rizon.net"
+PORT = 6667
+NICKNAME = "Katia"
+CHANNEL = "#Katia"
+NICKSERV_PASSWORD = "g00df00d"
+
+# IRC_SOCKET_HOST = settings.IRC_SOCKET_HOST
+# IRC_SOCKET_PORT = settings.IRC_SOCKET_PORT
+IRC_SOCKET_HOST = "localhost"
+IRC_SOCKET_PORT = 1234
+
 openai.api_key = "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"
 IRC_BOT_NICKNAME = "Katia"
 API_KEY = "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"
@@ -46,16 +58,9 @@ def save_conversation(user_id, user_message, bot_response):
         raise
 
 
-
 def load_conversation(user_id):
     """
     Load a conversation from a file for a specific user.
-
-    Args:
-        user_id (str): The unique identifier for the user.
-
-    Returns:
-        str: The conversation history as a string, or a message indicating no file found.
     """
     try:
         user_file_path = os.path.join(CONV_DIR, f"{user_id}.txt")
@@ -141,15 +146,8 @@ class IRCBot(SingleServerIRCBot):
     def start(self):
         """Override start method to include socket listener."""
         self.start_socket_listener()
-        super().start(
+        super().start()
 
-
-# Configuration
-SERVER = "irc.rizon.net"
-PORT = 6667
-NICKNAME = "Katia"
-CHANNEL = "#Katia"
-NICKSERV_PASSWORD = "g00df00d"
 
 if __name__ == "__main__":
     bot = IRCBot(SERVER, PORT, NICKNAME, CHANNEL, NICKSERV_PASSWORD)

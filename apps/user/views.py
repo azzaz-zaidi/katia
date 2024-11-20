@@ -158,7 +158,7 @@ def verify_otp(request):
                     get_otp.delete()
                     image_data_url = None
                     return Response({'success': True, 'message': 'Email verified successfully', 'user_id': user.id,
-                                     'user_name': user.full_name, 'user_email': user.email,
+                                     'user_name': user.full_name, 'user_email': user.email, 'auth_type':user.auth_type,
                                      'profile_picture': image_data_url},
                                     status=status.HTTP_200_OK)
                 elif verify_type == '2':
@@ -170,7 +170,7 @@ def verify_otp(request):
                     else:
                         image_data_url = None
                     return Response({'success': True, 'message': 'Email verified successfully', 'user_id': user.id,
-                                     'user_name': user.full_name, 'user_email': user.email,
+                                     'user_name': user.full_name, 'user_email': user.email, 'auth_type':user.auth_type,
                                      'profile_picture': image_data_url},
                                     status=status.HTTP_200_OK)
 
@@ -182,7 +182,7 @@ def verify_otp(request):
                         image_data_url = None
                     get_otp.delete()
                     return Response({'success': True, 'message': 'OTP verified for reset password', 'user_id': user.id,
-                                     'user_name': user.full_name, 'user_email': user.email,
+                                     'user_name': user.full_name, 'user_email': user.email, 'auth_type':user.auth_type,
                                      'profile_picture': image_data_url},
                                     status=status.HTTP_200_OK)
             else:
@@ -218,9 +218,19 @@ def google_signup(request):
                 user.save()
                 user.email_verified = True
                 user.save()
+
+                if user.profile_picture:
+                    profile_picture_base64 = base64.b64encode(user.profile_picture).decode('utf-8')
+                    image_data_url = f"data:image/jpeg;base64,{profile_picture_base64}"
+                else:
+                    image_data_url = None
+
                 login(request, user)
-                return Response({'success': True, 'message': 'User registered successfully'},
-                                status=status.HTTP_201_CREATED)
+                return Response({'success': True, 'message': 'User registered successfully', 'user_id': user.id,
+                      'user_name': user.full_name, 'user_email': user.email,
+                      'profile_picture': image_data_url},
+                     status=status.HTTP_201_CREATED)
+
         else:
             return Response({'success': False, 'message': 'Access Token is expired or invalid'
                              }, status=status.HTTP_400_BAD_REQUEST)
@@ -240,9 +250,18 @@ def google_login(request):
                 if user.email_verified is False:
                     user.email_verified = True
                     user.save()
+                if user.profile_picture:
+                    profile_picture_base64 = base64.b64encode(user.profile_picture).decode('utf-8')
+                    image_data_url = f"data:image/jpeg;base64,{profile_picture_base64}"
+                else:
+                    image_data_url = None
+
                 login(request, user)
-                return Response({'success': True, 'message': 'User logged in successfully'},
-                                status=status.HTTP_200_OK)
+
+                return Response({'success': True, 'message': 'User logged in successfully', 'user_id': user.id,
+                          'user_name': user.full_name, 'user_email': user.email,
+                          'profile_picture': image_data_url},
+                         status=status.HTTP_200_OK)
             else:
                 return Response({'success': False, 'message': 'User not found'},
                                 status=status.HTTP_400_BAD_REQUEST)
