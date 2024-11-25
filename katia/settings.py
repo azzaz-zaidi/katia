@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-^zw-x0cq-ij_w003^#ql@k@o1lj7qk9ffvmqv84l==sd1!r^%6
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = ['*']
-SESSION_ENGINE = config('SESSION_ENGINE')
+# SESSION_ENGINE = config('SESSION_ENGINE')
 # Application definition
 
 REST_FRAMEWORK = {
@@ -87,22 +87,22 @@ WSGI_APPLICATION = 'katia.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 #
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'katia',
-        'USER': 'postgres',
-        'PASSWORD': '1234',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'katia',
+#         'USER': 'postgres',
+#         'PASSWORD': '1234',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
 #     }
 # }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -149,15 +149,24 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = config('EMAIL_HOST')
-EMAIL_PORT = config('EMAIL_PORT')
-EMAIL_USE_TLS = config('EMAIL_USE_TLS')
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
+# EMAIL_HOST = config('EMAIL_HOST')
+# EMAIL_PORT = config('EMAIL_PORT')
+# EMAIL_USE_TLS = config('EMAIL_USE_TLS')
+# EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+# EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+# DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 
-API_KEY = config('API_KEY')
-BASE_URL = config('BASE_URL')
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "azzaz.zaidi@sparkai.ca"
+EMAIL_HOST_PASSWORD = "kbcmqurdewskeiil"
+DEFAULT_FROM_EMAIL = "azzaz.zaidi@sparkai.ca"
+SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
+API_KEY = "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"
+BASE_URL = "https://api.openai.com/v1/"
+# API_KEY = config('API_KEY')
+# BASE_URL = config('BASE_URL')
 
 # IRC_SOCKET_HOST = config('IRC_SOCKET_HOST')
 # IRC_SOCKET_PORT = config('IRC_SOCKET_PORT')

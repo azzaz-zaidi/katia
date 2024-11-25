@@ -2,21 +2,21 @@ import requests
 import json
 import base64
 
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
 from .models import User
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.hashers import check_password
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.decorators import login_required
 from random import randint
 from .models import OtpTemp
 from datetime import timedelta
-from django.utils import timezone
-from django.contrib.auth.base_user import BaseUserManager
-from django.core.mail import send_mail
 from django.conf import settings
+from django.utils import timezone
+from rest_framework import status
+from django.core.mail import send_mail
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from django.contrib.auth.hashers import check_password
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.base_user import BaseUserManager
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login, logout
 
 
 def generate_unique_otp():
@@ -158,7 +158,7 @@ def verify_otp(request):
                     get_otp.delete()
                     image_data_url = None
                     return Response({'success': True, 'message': 'Email verified successfully', 'user_id': user.id,
-                                     'user_name': user.full_name, 'user_email': user.email, 'auth_type':user.auth_type,
+                                     'user_name': user.full_name, 'user_email': user.email, 'auth_type': user.auth_type,
                                      'profile_picture': image_data_url},
                                     status=status.HTTP_200_OK)
                 elif verify_type == '2':
@@ -227,9 +227,9 @@ def google_signup(request):
 
                 login(request, user)
                 return Response({'success': True, 'message': 'User registered successfully', 'user_id': user.id,
-                      'user_name': user.full_name, 'user_email': user.email,
-                      'profile_picture': image_data_url},
-                     status=status.HTTP_201_CREATED)
+                                 'user_name': user.full_name, 'user_email': user.email, 'auth_type': user.auth_type,
+                                 'profile_picture': image_data_url},
+                                status=status.HTTP_201_CREATED)
 
         else:
             return Response({'success': False, 'message': 'Access Token is expired or invalid'
@@ -259,9 +259,9 @@ def google_login(request):
                 login(request, user)
 
                 return Response({'success': True, 'message': 'User logged in successfully', 'user_id': user.id,
-                          'user_name': user.full_name, 'user_email': user.email,
-                          'profile_picture': image_data_url},
-                         status=status.HTTP_200_OK)
+                                'user_name': user.full_name, 'user_email': user.email, 'auth_type': user.auth_type,
+                                 'profile_picture': image_data_url},
+                                status=status.HTTP_200_OK)
             else:
                 return Response({'success': False, 'message': 'User not found'},
                                 status=status.HTTP_400_BAD_REQUEST)
